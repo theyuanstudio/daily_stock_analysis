@@ -1,0 +1,16 @@
+{
+  "name": "Daily Stock Analysis",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "web-server",
+      "command": "WEBUI_HOST=0.0.0.0 WEBUI_PORT=8000 python main.py --serve-only"
+    }
+  ],
+  "ports": [
+    {
+      "name": "web server",
+      "port": 8000
+    }
+  ]
+}

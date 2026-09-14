@@ -1,9 +1,12 @@
 name: 每日股票分析
 
 on:
-  # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
+  # 定时触发 - 每个工作日 07:00 美国东部时间（America/New_York）
+  # GitHub Actions cron 只支持 UTC 且不处理夏令时，因此同时登记 EDT/EST 两个 UTC 时刻，
+  # 再由下方 gate 作业按 America/New_York 本地小时精确放行 07:00，避免一天触发两次。
   schedule:
-    - cron: '0 10 * * 1-5'     # 周一到周五，UTC 10:00 = 北京时间 18:00
+    - cron: '0 11 * * 1-5'     # 07:00 America/New_York (EDT, UTC-4)
+    - cron: '0 12 * * 1-5'     # 07:00 America/New_York (EST, UTC-5)
   
   # 手动触发
   workflow_dispatch:
@@ -29,7 +32,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 夏令时安全闸门：schedule 触发时，仅在 America/New_York 本地时间 07 点放行，
+  # 从而让 EDT(11:00 UTC)/EST(12:00 UTC) 两个 cron 每天只有一个真正执行；
+  # 手动触发（workflow_dispatch）始终放行。
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: 判定是否为美东 07:00
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "非定时触发（${{ github.event_name }}），直接放行。"
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour=$(TZ='America/New_York' date +%H)
+          if [ "$hour" = "07" ]; then
+            echo "当前美东时间 ${hour}:00，放行本次定时分析。"
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "当前美东时间 ${hour}:00，非 07:00（夏令时去重），跳过本次触发。"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   analyze:
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     # 兼容误将 STOCK_LIST 配到同名 Environment variables 的场景；
     # 推荐位置仍是 Settings -> Secrets and variables -> Actions -> Repository variables。

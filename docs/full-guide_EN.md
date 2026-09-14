@@ -194,7 +194,7 @@ To get started quickly, you need at minimum:
 
 ### 5. Done!
 
-Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
+Default schedule: Every weekday at **07:00 (US Eastern Time)** automatic execution (DST-aware; see [Scheduled Task Configuration](#scheduled-task-configuration)).
 
 ---
 
@@ -762,11 +762,16 @@ Edit `.github/workflows/00-daily-analysis.yml`:
 
 ```yaml
 schedule:
-  # UTC time, Beijing time = UTC + 8
-  - cron: '0 10 * * 1-5'   # Monday to Friday 18:00 (Beijing Time)
+  # GitHub Actions cron is UTC-only and has no DST awareness. The default is every
+  # weekday at 07:00 US Eastern time, registered as both the EDT and EST UTC times;
+  # a `gate` job then admits only 07:00 in America/New_York so it runs once per day.
+  - cron: '0 11 * * 1-5'   # 07:00 America/New_York (EDT, UTC-4)
+  - cron: '0 12 * * 1-5'   # 07:00 America/New_York (EST, UTC-5)
 ```
 
-Common time reference:
+> To run at a fixed UTC time without DST alignment, drop one of the cron lines and the `gate` job and keep a single UTC cron.
+
+Common time reference (UTC, for customization):
 
 | Beijing Time | UTC cron expression |
 |---------|----------------|
@@ -775,6 +780,11 @@ Common time reference:
 | 15:00 | `'0 7 * * 1-5'` |
 | 18:00 | `'0 10 * * 1-5'` |
 | 21:00 | `'0 13 * * 1-5'` |
+
+| US Eastern Time | UTC cron expression |
+|---------|----------------|
+| 07:00 (EDT) | `'0 11 * * 1-5'` |
+| 07:00 (EST) | `'0 12 * * 1-5'` |
 
 ### Local Scheduled Tasks
 

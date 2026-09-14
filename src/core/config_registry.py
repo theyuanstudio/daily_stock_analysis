@@ -1184,6 +1184,33 @@ _FIELD_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         "validation": {},
         "display_order": 53,
     },
+    "SEARCH_PROVIDER_PRIORITY": {
+        "title": "Search Provider Priority",
+        "description": "Comma-separated search provider order. Empty keeps the current default. Tokens: anspire, bocha, tavily, brave, serpapi, minimax, searxng.",
+        "category": "data_source",
+        "data_type": "string",
+        "ui_control": "text",
+        "is_sensitive": False,
+        "is_required": False,
+        "is_editable": True,
+        "default_value": "",
+        "options": [],
+        "validation": {"multi_value": True, "delimiter": ","},
+        "display_order": 54,
+        "help_key": "settings.data_source.SEARCH_PROVIDER_PRIORITY",
+        "examples": [
+            "SEARCH_PROVIDER_PRIORITY=",
+            "SEARCH_PROVIDER_PRIORITY=searxng",
+            "SEARCH_PROVIDER_PRIORITY=searxng,anspire,tavily",
+        ],
+        "docs": [
+            {
+                "label": "完整指南：搜索服务配置",
+                "href": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/docs/full-guide.md#搜索服务配置",
+            },
+        ],
+        "warning_codes": ["provider_priority_order"],
+    },
     "ENABLE_REALTIME_QUOTE": {
         "title": "Enable Realtime Quote",
         "description": "Enable realtime market quotes. Disable to only use historical close prices.",

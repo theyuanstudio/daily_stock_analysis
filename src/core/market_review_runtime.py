@@ -108,6 +108,7 @@ def build_market_review_runtime(
             searxng_timeout_seconds=getattr(config, "searxng_timeout_seconds", None),
             news_max_age_days=getattr(config, "news_max_age_days", 3),
             news_strategy_profile=getattr(config, "news_strategy_profile", "short"),
+            provider_priority=getattr(config, "search_provider_priority_list", None),
         )
 
     analyzer = None

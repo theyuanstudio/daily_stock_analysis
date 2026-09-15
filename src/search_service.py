@@ -48,6 +48,54 @@ from src.services.run_diagnostics import record_provider_run, record_provider_ru
 logger = logging.getLogger(__name__)
 
 _SEARCH_TIMEOUT_PROCESS_START_METHOD = "spawn"
+# Canonical SearchService provider names, keyed by env/token form.
+# Assembly order without SEARCH_PROVIDER_PRIORITY remains:
+# Anspire (insert 0) → Bocha → Tavily → Brave → SerpAPI → MiniMax → SearXNG.
+_SEARCH_PROVIDER_PRIORITY_TOKENS = {
+    "tavily": "Tavily",
+    "serpapi": "SerpAPI",
+    "bocha": "Bocha",
+    "anspire": "Anspire",
+    "minimax": "MiniMax",
+    "brave": "Brave",
+    "searxng": "SearXNG",
+}
+
+
+def normalize_search_provider_priority(tokens: Optional[List[str]]) -> List[str]:
+    """Map user tokens to canonical provider names; ignore unknowns and duplicates."""
+    names: List[str] = []
+    seen = set()
+    for raw in tokens or []:
+        token = str(raw or "").strip().lower()
+        if not token:
+            continue
+        name = _SEARCH_PROVIDER_PRIORITY_TOKENS.get(token)
+        if name is None:
+            logger.debug("忽略未知搜索 provider token: %s", raw)
+            continue
+        if name in seen:
+            continue
+        seen.add(name)
+        names.append(name)
+    return names
+
+
+def apply_search_provider_priority(
+    providers: List[Any],
+    tokens: Optional[List[str]],
+) -> List[Any]:
+    """Move listed providers to the front; keep unlisted providers in relative order."""
+    ordered_names = normalize_search_provider_priority(tokens)
+    if not ordered_names:
+        return list(providers)
+    rank = {name: idx for idx, name in enumerate(ordered_names)}
+    listed = [provider for provider in providers if provider.name in rank]
+    unlisted = [provider for provider in providers if provider.name not in rank]
+    listed.sort(key=lambda provider: rank[provider.name])
+    return listed + unlisted
+
+
 _SEARCH_TIMEOUT_PROCESS_JOIN_GRACE_SECONDS = 1.0
 _SEARCH_TIMEOUT_WORKER_SLOTS = threading.BoundedSemaphore(4)
 
@@ -2403,6 +2451,7 @@ class SearchService:
         searxng_timeout_seconds: Optional[int] = None,
         news_max_age_days: int = 3,
         news_strategy_profile: str = "short",
+        provider_priority: Optional[List[str]] = None,
     ):
         """
         初始化搜索服务
@@ -2418,6 +2467,7 @@ class SearchService:
             searxng_public_instances_enabled: 未配置自建实例时，是否自动使用公共 SearXNG 实例
             news_max_age_days: 新闻最大时效（天）
             news_strategy_profile: 新闻窗口策略档位（ultra_short/short/medium/long）
+            provider_priority: 可选搜索 provider 顺序（token：anspire/bocha/tavily/brave/serpapi/minimax/searxng）；空值保持默认装配顺序
         """
         self._constructor_kwargs: Dict[str, Any] = {
             "bocha_keys": list(bocha_keys or []),
@@ -2431,6 +2481,7 @@ class SearchService:
             "searxng_timeout_seconds": searxng_timeout_seconds,
             "news_max_age_days": int(news_max_age_days),
             "news_strategy_profile": news_strategy_profile,
+            "provider_priority": list(provider_priority or []),
         }
         self._providers: List[BaseSearchProvider] = []
         self.news_max_age_days = max(1, news_max_age_days)
@@ -2493,7 +2544,16 @@ class SearchService:
         if anspire_keys:
             self._providers.insert(0, AnspireSearchProvider(anspire_keys))
             logger.info(f"已配置 Anspire Search 搜索，共 {len(anspire_keys)} 个 API Key")
-            
+
+        ordered_priority = normalize_search_provider_priority(provider_priority)
+        if ordered_priority:
+            self._providers = apply_search_provider_priority(self._providers, provider_priority)
+            logger.info(
+                "已应用搜索 provider 优先级 %s，实际顺序: %s",
+                ordered_priority,
+                [provider.name for provider in self._providers],
+            )
+
         if not self._providers:
             logger.warning("未配置任何搜索能力，新闻搜索功能将不可用")
 
@@ -4912,6 +4972,7 @@ def get_search_service() -> SearchService:
                     searxng_timeout_seconds=getattr(config, "searxng_timeout_seconds", None),
                     news_max_age_days=config.news_max_age_days,
                     news_strategy_profile=getattr(config, "news_strategy_profile", "short"),
+                    provider_priority=getattr(config, "search_provider_priority_list", None),
                 )
     
     return _search_service

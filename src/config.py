@@ -984,6 +984,8 @@ class Config:
     searxng_base_urls: List[str] = field(default_factory=list)  # SearXNG instance URLs (self-hosted, no quota)
     searxng_public_instances_enabled: bool = False  # Opt in to public discovery when base URLs are absent
     searxng_timeout_seconds: int = 10  # 自建 SearXNG 单次搜索超时（秒）
+    # 搜索 provider 尝试顺序（逗号分隔 token）。留空保持 SearchService 默认装配顺序。
+    search_provider_priority: str = ""
 
     # === Social Sentiment (US stocks only, api.adanos.org) ===
     social_sentiment_api_key: Optional[str] = None
@@ -1884,6 +1886,7 @@ class Config:
             searxng_timeout_seconds=parse_env_int(
                 os.getenv('SEARXNG_TIMEOUT_SECONDS'), 10, field_name='SEARXNG_TIMEOUT_SECONDS', minimum=1
             ),
+            search_provider_priority=os.getenv('SEARCH_PROVIDER_PRIORITY', '') or '',
             social_sentiment_api_key=os.getenv('SOCIAL_SENTIMENT_API_KEY') or None,
             social_sentiment_api_url=os.getenv('SOCIAL_SENTIMENT_API_URL', 'https://api.adanos.org').rstrip('/'),
             news_max_age_days=parse_env_int(os.getenv('NEWS_MAX_AGE_DAYS'), 3, field_name='NEWS_MAX_AGE_DAYS', minimum=1),
@@ -2987,6 +2990,15 @@ class Config:
     def has_searxng_enabled(self) -> bool:
         """Whether SearXNG fallback is enabled via self-hosted or public mode."""
         return bool(self.searxng_base_urls) or bool(self.searxng_public_instances_enabled)
+
+    @property
+    def search_provider_priority_list(self) -> List[str]:
+        """Comma-separated SEARCH_PROVIDER_PRIORITY tokens, preserving user order."""
+        return [
+            token.strip()
+            for token in (self.search_provider_priority or "").split(",")
+            if token.strip()
+        ]
 
     def has_search_capability_enabled(self) -> bool:
         """Whether any search provider is configured or SearXNG fallback is enabled."""

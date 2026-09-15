@@ -391,6 +391,18 @@ const settingsHelpZhCN: SettingsHelpMap = {
     impact: ['影响无商业搜索 Key 时的新闻和网页搜索兜底能力。'],
     notes: ['公共实例稳定性不可控，生产环境建议使用自建或可信实例。'],
   },
+  'settings.data_source.SEARCH_PROVIDER_PRIORITY': {
+    title: '搜索服务优先级',
+    summary: '配置新闻搜索 provider 的尝试顺序。',
+    usage: '使用英文逗号分隔 token；留空保持默认顺序 Anspire → Bocha → Tavily → Brave → SerpAPI → MiniMax → SearXNG。',
+    valueNotes: [
+      '可用 token：anspire、bocha、tavily、brave、serpapi、minimax、searxng，不区分大小写。',
+      '未列出的已启用 provider 会保持原相对顺序，接在已列出的 provider 后面。',
+      '要把 SearXNG 放第一位，先启用 SearXNG，再设 SEARCH_PROVIDER_PRIORITY=searxng。',
+    ],
+    impact: ['影响新闻检索尝试顺序与失败后的 fallback 路径，不改变单个 provider 的请求语义。'],
+    notes: ['未知 token 会被忽略；未启用的 provider 不会仅仅因为出现在列表中而被创建。'],
+  },
   'settings.data_source.ENABLE_CHIP_DISTRIBUTION': {
     title: '筹码分布分析',
     summary: '控制是否启用筹码分布相关分析。',
@@ -1618,6 +1630,18 @@ const settingsHelpEnUS: SettingsHelpMap = {
     valueNotes: ['When public discovery is disabled, only these instances are used.'],
     impact: ['Affects fallback web search when commercial search keys are absent.'],
     notes: ['For production, prefer self-hosted or trusted instances over public ones.'],
+  },
+  'settings.data_source.SEARCH_PROVIDER_PRIORITY': {
+    title: 'Search Provider Priority',
+    summary: 'Configures the news-search provider try order.',
+    usage: 'Use comma-separated tokens. Leave empty to keep the default Anspire → Bocha → Tavily → Brave → SerpAPI → MiniMax → SearXNG order.',
+    valueNotes: [
+      'Tokens: anspire, bocha, tavily, brave, serpapi, minimax, searxng (case-insensitive).',
+      'Enabled providers that are not listed keep their relative order after the listed ones.',
+      'To put SearXNG first, enable SearXNG and set SEARCH_PROVIDER_PRIORITY=searxng.',
+    ],
+    impact: ['Affects news-search fallback order, not a single provider request contract.'],
+    notes: ['Unknown tokens are ignored. A listed provider is used only if it is already enabled.'],
   },
   'settings.data_source.ENABLE_CHIP_DISTRIBUTION': {
     title: 'Chip Distribution',

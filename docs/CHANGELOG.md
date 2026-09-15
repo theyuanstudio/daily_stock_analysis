@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 - [测试] 修复股票名称解析冷启动超时并发测试的同步竞态：在放行后台抓取前确认两个等待者均已结束并返回空结果，避免 Docker 发布门禁偶发失败。
+- [改进] GitHub Actions 每日分析默认改为每个工作日 07:00 美国东部时间执行：登记 EDT/EST 两个 UTC cron 并新增 gate 作业按 America/New_York 本地小时精确放行 07:00，避免夏令时导致一天触发两次；同步更新中英文 README 与 full-guide 定时说明。
 - [新功能] 新增 `SEARCH_PROVIDER_PRIORITY`，可按逗号指定新闻搜索 provider 尝试顺序（默认保持 Anspire → Bocha → Tavily → Brave → SerpAPI → MiniMax → SearXNG）；要把 SearXNG 放第一位可设 `SEARCH_PROVIDER_PRIORITY=searxng`（SearXNG 本身需已启用）。
 
 <!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->
